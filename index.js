@@ -1,5 +1,9 @@
+const USE_HTTP_INSTRUMENTATION    = true;
+const USE_EXPRESS_INSTRUMENTATION = true;
+
 const AWSXRay = require('aws-xray-sdk');
-AWSXRay.captureHTTPsGlobal(require('http'));
+
+USE_HTTP_INSTRUMENTATION && AWSXRay.captureHTTPsGlobal(require('http'));
 
 require('isomorphic-fetch');
 
@@ -9,14 +13,14 @@ const awsServerlessExpressMiddleware = require('aws-serverless-express/middlewar
 
 const app = express();
 
-app.use(AWSXRay.express.openSegment('aws-xray-test'));
+USE_EXPRESS_INSTRUMENTATION && app.use(AWSXRay.express.openSegment('aws-xray-test'));
 app.use(awsServerlessExpressMiddleware.eventContext());
 
 app.get('/test', (req, res) =>
     fetch('https://www.amazon.com')
-        .then(res => {
-            console.log(`request response: ${res.status} ${res.statusText}`);
-            res.json({ statusCode: res.status, statusText: res.statusText });
+        .then(reply => {
+            console.log(`request response: ${reply.status} ${reply.statusText}`);
+            res.json({ statusCode: reply.status, statusText: reply.statusText });
         })
         .catch(err => {
             console.error(err);
@@ -24,7 +28,7 @@ app.get('/test', (req, res) =>
         })
 );
 
-app.use(AWSXRay.express.closeSegment());
+USE_EXPRESS_INSTRUMENTATION && app.use(AWSXRay.express.closeSegment());
 
 const binaryMimeTypes = [];
 const server  = awsServerlessExpress.createServer(app, null, binaryMimeTypes);
